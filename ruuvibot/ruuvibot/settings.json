@@ -1,0 +1,5 @@
+{
+    "telegram_token": "YOUR_TELEGRAM_TOKEN",
+    "indoor_mac": "YOUR_INDOOR_RUUVITAG_MAC",
+    "outdoor_mac": "YOUR_OUTDOOR_RUUVITAG_MAC",
+}
