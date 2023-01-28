@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from ruuvitag_sensor.ruuvi import RuuviTagSensor
 import json
+import sqlite3
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -63,6 +64,20 @@ async def temperature(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
+async def heating_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    conn = sqlite3.connect('dbdata/heatcontrol.sqlite')
+    c = conn.cursor()
+    c.execute('SELECT * FROM hour_prices ORDER BY DateTime DESC LIMIT 24')
+    data = c.fetchall()
+
+    pretty_data = [' '.join(map(str,tups)) for tups in data]
+
+    pretty_data = json.dumps(pretty_data, indent=4, sort_keys=True)
+
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=str(pretty_data))
+    
+    conn.close()
+
 def main():
     # Read settings file
     with open('settings.json') as json_file:
@@ -78,6 +93,7 @@ def main():
     application.add_handler(CommandHandler('full', full))
     application.add_handler(CommandHandler('l', temperature))
     application.add_handler(CommandHandler('start', start))
+    application.add_handler(CommandHandler('h', heating_data))
     
     application.run_polling()
 
