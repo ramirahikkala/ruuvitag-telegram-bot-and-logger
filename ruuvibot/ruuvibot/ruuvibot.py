@@ -4,7 +4,10 @@ import logging
 from pexpect import TIMEOUT
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from ruuvitag_sensor.ruuvi import RuuviTagSensor
+try:
+    from ruuvitag_sensor.ruuvi import RuuviTagSensor
+except e:
+    print(e)
 import json
 import sqlite3
 
@@ -21,46 +24,54 @@ MAC_IN = 'F2:9F:28:C0:09:3E'
 MAC_OUT = 'C3:E8:BC:6E:13:8D'
 
 async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # List of macs of sensors which data will be collected
-    # If list is empty, data will be collected for all found sensors
-    mac_in = 'F2:9F:28:C0:09:3E'
-    mac_out = 'C3:E8:BC:6E:13:8D'
-    macs = [mac_in, mac_out]
-    # get_data_for_sensors will look data for the duration of timeout_in_sec
-    
 
-    datas = RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
+    try:
+        # List of macs of sensors which data will be collected
+        # If list is empty, data will be collected for all found sensors
+        mac_in = 'F2:9F:28:C0:09:3E'
+        mac_out = 'C3:E8:BC:6E:13:8D'
+        macs = [mac_in, mac_out]
+        # get_data_for_sensors will look data for the duration of timeout_in_sec
+        
 
-    text = json.dumps(datas, indent=4, sort_keys=True).replace('F2:9F:28:C0:09:3E', 'sisä').replace('C3:E8:BC:6E:13:8D', 'ulko')
+        datas = RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
 
-    # Dictionary will have lates data for each sensor
-    #print(datas['AA:2C:6A:1E:59:3D'])
-    #print(datas['CC:2C:6A:1E:59:3D'])
+        text = json.dumps(datas, indent=4, sort_keys=True).replace('F2:9F:28:C0:09:3E', 'sisä').replace('C3:E8:BC:6E:13:8D', 'ulko')
+
+        # Dictionary will have lates data for each sensor
+        #print(datas['AA:2C:6A:1E:59:3D'])
+        #print(datas['CC:2C:6A:1E:59:3D'])
+    except:
+        text = "Ei saatu dataa"
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 async def temperature(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # List of macs of sensors which data will be collected
-    # If list is empty, data will be collected for all found sensors
-    mac_in = 'F2:9F:28:C0:09:3E'
-    mac_out = 'C3:E8:BC:6E:13:8D'
-    macs = [mac_in, mac_out]
-    # get_data_for_sensors will look data for the duration of timeout_in_sec
 
-    datas = RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
+    try:
+        # List of macs of sensors which data will be collected
+        # If list is empty, data will be collected for all found sensors
+        mac_in = 'F2:9F:28:C0:09:3E'
+        mac_out = 'C3:E8:BC:6E:13:8D'
+        macs = [mac_in, mac_out]
+        # get_data_for_sensors will look data for the duration of timeout_in_sec
 
-    text = json.dumps(datas, indent=4, sort_keys=True).replace('F2:9F:28:C0:09:3E', 'sisä').replace('C3:E8:BC:6E:13:8D', 'ulko')
+        datas = RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
 
-    if mac_in in datas and mac_out in datas:
-        text = "Sisä: " + str(datas[mac_in]['temperature']) + ", ulko: " + str(datas[mac_out]['temperature'])
-    elif mac_in in datas:
-        text = "Sisä: " + str(datas[mac_in]['temperature'])
-    elif mac_out in datas:
-        text = "Ulko: " + str(datas[mac_out]['temperature'])
+        text = json.dumps(datas, indent=4, sort_keys=True).replace('F2:9F:28:C0:09:3E', 'sisä').replace('C3:E8:BC:6E:13:8D', 'ulko')
 
-    # Dictionary will have lates data for each sensor
-    #print(datas['AA:2C:6A:1E:59:3D'])
-    #print(datas['CC:2C:6A:1E:59:3D'])
+        if mac_in in datas and mac_out in datas:
+            text = "Sisä: " + str(datas[mac_in]['temperature']) + ", ulko: " + str(datas[mac_out]['temperature'])
+        elif mac_in in datas:
+            text = "Sisä: " + str(datas[mac_in]['temperature'])
+        elif mac_out in datas:
+            text = "Ulko: " + str(datas[mac_out]['temperature'])
+
+        # Dictionary will have lates data for each sensor
+        #print(datas['AA:2C:6A:1E:59:3D'])
+        #print(datas['CC:2C:6A:1E:59:3D'])
+    except:
+        text = "Ei saatu dataa"
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
