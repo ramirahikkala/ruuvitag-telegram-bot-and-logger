@@ -1,11 +1,14 @@
 [tool.poetry]
 name = "ruuvibot"
-version = "0.1.0"
+version = "0.2.6"
 description = "Telegram bot to read ruuvitag data and log data to database"
 authors = ["Rami Rahikkala <rami.rahikkala@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
+pexpect = "^4.8.0"
+python-telegram-bot = "^20.0"
+ruuvitag-sensor = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -13,3 +16,6 @@ pytest = "^5.2"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+ruuvibot = 'ruuvibot:main'

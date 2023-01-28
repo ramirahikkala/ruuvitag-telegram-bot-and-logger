@@ -3,7 +3,7 @@ import logging
 
 from pexpect import TIMEOUT
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CallbackContext, CommandHandler
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from ruuvitag_sensor.ruuvi import RuuviTagSensor
 import json
 
@@ -12,14 +12,14 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-async def start(update: Update, context: CallbackContext.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Jag känner en bot, hon heter Anna, Anna, heter hon")
 
 TIMEOUT = 2
 MAC_IN = 'F2:9F:28:C0:09:3E'
 MAC_OUT = 'C3:E8:BC:6E:13:8D'
 
-async def full(update: Update, context: CallbackContext.DEFAULT_TYPE):
+async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # List of macs of sensors which data will be collected
     # If list is empty, data will be collected for all found sensors
     mac_in = 'F2:9F:28:C0:09:3E'
@@ -38,7 +38,7 @@ async def full(update: Update, context: CallbackContext.DEFAULT_TYPE):
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
-async def temperature(update: Update, context: CallbackContext.DEFAULT_TYPE):
+async def temperature(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # List of macs of sensors which data will be collected
     # If list is empty, data will be collected for all found sensors
     mac_in = 'F2:9F:28:C0:09:3E'
@@ -63,8 +63,7 @@ async def temperature(update: Update, context: CallbackContext.DEFAULT_TYPE):
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
-if __name__ == '__main__':
-
+def main():
     # Read settings file
     with open('settings.json') as json_file:
         settings = json.load(json_file)
@@ -84,3 +83,5 @@ if __name__ == '__main__':
 
 
 
+if __name__ == '__main__':
+    main()
