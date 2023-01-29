@@ -18,27 +18,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Jag känner en bot, hon heter Anna, Anna, heter hon")
 
 TIMEOUT = 2
-MAC_IN = 'F2:9F:28:C0:09:3E'
-MAC_OUT = 'C3:E8:BC:6E:13:8D'
+
+# Dictionary of macs and names of sensors
+MACS= {}
+
+def get_ruuvi_data():
+    # List of macs of sensors which data will be collected
+    # If list is empty, data will be collected for all found sensors
+    macs = [m['MAC'] for m in MACS]
+    # get_data_for_sensors will look data for the duration of timeout_in_sec
+    return RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
+
+def replace_mac_with_name(datas):    
+
+    text = json.dumps(datas, indent=4, sort_keys=True)
+    
+    for m in MACS:
+        text = text.replace(m['MAC'], m['name'])
+    
+    return text
+
 
 async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
-        # List of macs of sensors which data will be collected
-        # If list is empty, data will be collected for all found sensors
-        mac_in = 'F2:9F:28:C0:09:3E'
-        mac_out = 'C3:E8:BC:6E:13:8D'
-        macs = [mac_in, mac_out]
-        # get_data_for_sensors will look data for the duration of timeout_in_sec
         
-
-        datas = RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
-
-        text = json.dumps(datas, indent=4, sort_keys=True).replace('F2:9F:28:C0:09:3E', 'sisä').replace('C3:E8:BC:6E:13:8D', 'ulko')
-
-        # Dictionary will have lates data for each sensor
-        #print(datas['AA:2C:6A:1E:59:3D'])
-        #print(datas['CC:2C:6A:1E:59:3D'])
+        datas = get_ruuvi_data()
+        text = replace_mac_with_name(datas)
+        
     except Exception as e:
         text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
         logging.error(e)
@@ -48,23 +55,13 @@ async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def temperature(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
-        # List of macs of sensors which data will be collected
-        # If list is empty, data will be collected for all found sensors
-        mac_in = 'F2:9F:28:C0:09:3E'
-        mac_out = 'C3:E8:BC:6E:13:8D'
-        macs = [mac_in, mac_out]
-        # get_data_for_sensors will look data for the duration of timeout_in_sec
+        datas = get_ruuvi_data()           
 
-        datas = RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
+        # Get only temperature from data
+        for mac in datas:
+            datas[mac] = datas[mac]['temperature']
 
-        text = json.dumps(datas, indent=4, sort_keys=True).replace('F2:9F:28:C0:09:3E', 'sisä').replace('C3:E8:BC:6E:13:8D', 'ulko')
-
-        if mac_in in datas and mac_out in datas:
-            text = "Sisä: " + str(datas[mac_in]['temperature']) + ", ulko: " + str(datas[mac_out]['temperature'])
-        elif mac_in in datas:
-            text = "Sisä: " + str(datas[mac_in]['temperature'])
-        elif mac_out in datas:
-            text = "Ulko: " + str(datas[mac_out]['temperature'])
+        text = replace_mac_with_name(datas)     
         
     except:
         text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
@@ -93,8 +90,7 @@ def main():
     
     token = settings['telegram_token']
 
-    MAC_IN = settings['indoor_mac']
-    MAC_OUT = settings['outdoor_mac']
+    MACS = settings['macs']
 
     application = ApplicationBuilder().token(token).build()
     
