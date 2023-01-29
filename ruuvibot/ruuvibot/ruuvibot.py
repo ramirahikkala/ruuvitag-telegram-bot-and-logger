@@ -4,10 +4,8 @@ import logging
 from pexpect import TIMEOUT
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-try:
-    from ruuvitag_sensor.ruuvi import RuuviTagSensor
-except e:
-    print(e)
+from ruuvitag_sensor.ruuvi import RuuviTagSensor
+
 import json
 import sqlite3
 
@@ -41,8 +39,9 @@ async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Dictionary will have lates data for each sensor
         #print(datas['AA:2C:6A:1E:59:3D'])
         #print(datas['CC:2C:6A:1E:59:3D'])
-    except:
-        text = "Ei saatu dataa"
+    except Exception as e:
+        text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
+        logging.error(e)
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
@@ -66,12 +65,10 @@ async def temperature(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text = "Sisä: " + str(datas[mac_in]['temperature'])
         elif mac_out in datas:
             text = "Ulko: " + str(datas[mac_out]['temperature'])
-
-        # Dictionary will have lates data for each sensor
-        #print(datas['AA:2C:6A:1E:59:3D'])
-        #print(datas['CC:2C:6A:1E:59:3D'])
+        
     except:
-        text = "Ei saatu dataa"
+        text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
+        logging.error(e)        
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
