@@ -1,0 +1,14 @@
+{
+    "telegram_token": "5339876700:AAErdXnoxqqoM7ClSJi_wx7kmD3YeW4GJMY",
+    "MACs":    
+    [
+        {
+            "name": "Sisä",
+            "MAC": "C3:E8:BC:6E:13:8D"
+        },
+        {
+            "name": "Ulko",
+            "MAC": "F2:9F:28:C0:09:3E"
+        }
+    ]
+}

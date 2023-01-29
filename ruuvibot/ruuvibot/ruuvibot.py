@@ -141,7 +141,7 @@ def main():
     
     token = settings['telegram_token']
 
-    MACS = settings['macs']
+    MACS = settings['MACs']
 
     application = ApplicationBuilder().token(token).build()
     
