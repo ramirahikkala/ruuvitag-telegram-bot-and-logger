@@ -1,5 +1,6 @@
 from cgitb import text
 import logging
+import re
 
 from pexpect import TIMEOUT
 from telegram import Update
@@ -34,7 +35,8 @@ def replace_mac_with_name(datas):
     text = json.dumps(datas, indent=4, sort_keys=True)
     
     for m in MACS:
-        text = text.replace(m['MAC'], m['name'])
+        # replace mac with name in text ignoring case
+        text = re.sub(m['MAC'], m['name'], text, flags=re.IGNORECASE)
     
     return text
 
