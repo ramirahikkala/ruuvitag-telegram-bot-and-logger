@@ -28,17 +28,15 @@ def get_ruuvi_data():
     # If list is empty, data will be collected for all found sensors
     macs = [m['MAC'] for m in MACS]
     # get_data_for_sensors will look data for the duration of timeout_in_sec
-    return RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
+    ruuvi_data = RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
 
-def replace_mac_with_name(datas):    
-
-    text = json.dumps(datas, indent=4, sort_keys=True)
-    
     for m in MACS:
-        # replace mac with name in text ignoring case
-        text = re.sub(m['MAC'], m['name'], text, flags=re.IGNORECASE)
+        if m['MAC'] in ruuvi_data:
+            ruuvi_data[m['MAC']] = m['name']    
+
+def to_json(ruuvi_data):
     
-    return text
+    return json.dumps(ruuvi_data, indent=4, sort_keys=True)
 
 
 async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -46,7 +44,7 @@ async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         
         datas = get_ruuvi_data()
-        text = replace_mac_with_name(datas)
+        text = to_json(datas)
         
     except Exception as e:
         text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
@@ -63,7 +61,8 @@ async def temperature(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for mac in datas:
             datas[mac] = datas[mac]['temperature']
 
-        text = replace_mac_with_name(datas)     
+
+        text = to_json(datas)     
         
     except:
         text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
