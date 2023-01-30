@@ -30,8 +30,8 @@ def get_ruuvi_data():
     ruuvi_data = RuuviTagSensor.get_data_for_sensors([m['MAC'] for m in MACS], TIMEOUT)
 
     for m in MACS:
-        if m['MAC'] in ruuvi_data.keys():
-            ruuvi_data[m['MAC']] = m['name']    
+        if m['MAC'] in ruuvi_data:
+            ruuvi_data[m['MAC']] = m.pop('name')
     
     return ruuvi_data
 
