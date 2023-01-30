@@ -26,12 +26,11 @@ MACS= {}
 def get_ruuvi_data():
     # List of macs of sensors which data will be collected
     # If list is empty, data will be collected for all found sensors
-    macs = [m['MAC'] for m in MACS]
     # get_data_for_sensors will look data for the duration of timeout_in_sec
-    ruuvi_data = RuuviTagSensor.get_data_for_sensors(macs, TIMEOUT)
+    ruuvi_data = RuuviTagSensor.get_data_for_sensors([m['MAC'] for m in MACS], TIMEOUT)
 
     for m in MACS:
-        if m['MAC'] in ruuvi_data:
+        if m['MAC'] in ruuvi_data.keys():
             ruuvi_data[m['MAC']] = m['name']    
     
     return ruuvi_data
