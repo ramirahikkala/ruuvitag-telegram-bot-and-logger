@@ -36,6 +36,22 @@ def get_ruuvi_data():
     
     return ruuvi_data
 
+def to_json(ruuvi_data: dict) -> str:
+    """Converts the given Ruuvi data into JSON.
+    
+    Parameters
+    ----------
+    ruuvi_data : dict
+        A dictionary containing the Ruuvi data
+    
+    Returns
+    -------
+    str
+        A JSON string containing the Ruuvi data
+    """
+    
+    return json.dumps(ruuvi_data, indent=4, sort_keys=True)
+
 def to_json(ruuvi_data):
     
     return json.dumps(ruuvi_data, indent=4, sort_keys=True)
