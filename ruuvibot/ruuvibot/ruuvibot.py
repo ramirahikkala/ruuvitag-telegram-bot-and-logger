@@ -33,6 +33,8 @@ def get_ruuvi_data():
     for m in MACS:
         if m['MAC'] in ruuvi_data:
             ruuvi_data[m['MAC']] = m['name']    
+    
+    return ruuvi_data
 
 def to_json(ruuvi_data):
     
@@ -64,7 +66,7 @@ async def temperature(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         text = to_json(datas)     
         
-    except:
+    except Exception as e:
         text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
         logging.error(e)        
 
