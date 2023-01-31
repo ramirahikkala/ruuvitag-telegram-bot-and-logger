@@ -142,6 +142,11 @@ async def alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
                     text=f"Lämpötilahälytys '{temperatureMonitor['name']}' lämpötila on {temperature} astetta, hälytysraja on {temperatureMonitor['max']} astetta",
                 )
             else:
+                if ACTIVE_ALARMS[temperatureMonitor["name"]] == True:
+                    await context.bot.send_message(
+                        job.chat_id,
+                        text=f"Lämpötila palasi normaaliksi. '{temperatureMonitor['name']}'lämpötila on {temperature} astetta",
+                    )
                 global ACTIVE_ALARMS
                 ACTIVE_ALARMS[temperatureMonitor["name"]] = False
 
