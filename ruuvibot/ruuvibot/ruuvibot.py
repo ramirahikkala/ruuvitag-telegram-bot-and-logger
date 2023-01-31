@@ -121,9 +121,10 @@ async def heating_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send the alarm message."""
 
+    global ACTIVE_ALARMS
     job = context.job
 
-    for temperatureMonitor in SETTINGS["temperatureMonitors"]:
+    for temperatureMonitor in SETTINGS["temperatureMonitoring"]:
         ruuvi_data = get_ruuvi_data()
         if temperatureMonitor["name"] in ruuvi_data:
             temperature = ruuvi_data[temperatureMonitor["name"]]["temperature"]
@@ -147,14 +148,13 @@ async def alarm(context: ContextTypes.DEFAULT_TYPE) -> None:
                         job.chat_id,
                         text=f"Lämpötila palasi normaaliksi. '{temperatureMonitor['name']}'lämpötila on {temperature} astetta",
                     )
-                global ACTIVE_ALARMS
                 ACTIVE_ALARMS[temperatureMonitor["name"]] = False
 
 
 async def send_alarm(context, job, name, text):
+    global ACTIVE_ALARMS
     if ACTIVE_ALARMS[name] == False:
         await context.bot.send_message(job.chat_id, text=text)
-    global ACTIVE_ALARMS
     ACTIVE_ALARMS[name] = True
 
 
@@ -204,20 +204,21 @@ async def unset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 def main():
+    global MACS
+    global SETTINGS
+    global ACTIVE_ALARMS
+
     # Read settings file
     with open("settings.json") as json_file:
         settings = json.load(json_file)
 
     token = settings["telegram_token"]
 
-    global MACS
     MACS = settings["MACs"]
 
-    global SETTINGS
     SETTINGS = settings
 
-    for alarm in SETTINGS["temperatureMonitors"]:
-        global ACTIVE_ALARMS
+    for alarm in SETTINGS["temperatureMonitoring"]:
         ACTIVE_ALARMS[alarm["name"]] = False
 
     application = ApplicationBuilder().token(token).build()
