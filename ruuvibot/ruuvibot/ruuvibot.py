@@ -22,10 +22,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-TIMEOUT = 2
+TIMEOUT = 5
 
-# Dictionary of macs and names of sensors
-MACS = {}
 SETTINGS = {}
 ACTIVE_ALARMS = {}
 
@@ -34,12 +32,42 @@ def get_ruuvi_data():
     # List of macs of sensors which data will be collected
     # If list is empty, data will be collected for all found sensors
     # get_data_for_sensors will look data for the duration of timeout_in_sec
-    ruuvi_data = RuuviTagSensor.get_data_for_sensors([m["MAC"] for m in MACS], TIMEOUT)
 
-    for m in MACS:
-        if m["MAC"] in ruuvi_data:
-            # Rename the key to the name of the sensor
-            ruuvi_data[m["name"]] = ruuvi_data.pop(m["MAC"])
+    ruuvi_tags = {}
+
+    for ruuvi in SETTINGS["ruuvitags"]:
+        ruuvi_tags[ruuvi["MAC"]] = ruuvi
+
+    ruuvi_data = RuuviTagSensor.get_data_for_sensors([m for m in ruuvi_tags], TIMEOUT)
+
+    # Append the name of the sensor to the data
+    for ruuvi_data_point in ruuvi_data:
+        ruuvi_data_point["name"] = ruuvi_tags[ruuvi_data_point]["name"]
+
+    # Compensate temperature offset
+    for ruuvi_data_point in ruuvi_data:
+        ruuvi_data_point["temperature_calibrated"] = ruuvi_data_point["temperature"] + ruuvi_tags[ruuvi_data_point["mac"]]["temperatureOffset"]
+
+    # Store in sqlite
+    conn = sqlite3.connect("dbdata/temperature.sqlite")
+    c = conn.cursor()
+    # Create table if it does not exist
+    c.execute(
+        "CREATE TABLE IF NOT EXISTS ruuvi (datetime text, name text, temperature real, temperature_calibrated real, humidity real, pressure real)"
+    )
+    for ruuvi_data_point in ruuvi_data:
+        c.execute(
+            "INSERT INTO ruuvi VALUES (datetime('now'), ?, ?, ?, ?, ?)",
+            (
+                ruuvi_data_point["name"],
+                ruuvi_data_point["temperature"],
+                ruuvi_data_point["temperature_calibrated"],
+                ruuvi_data_point["humidity"],
+                ruuvi_data_point["pressure"],
+            ),
+        )
+        conn.commit()
+    conn.close()
 
     return ruuvi_data
 
@@ -174,7 +202,7 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.effective_message.chat_id
     try:
         # Monitor once in a minute
-        due = 60        
+        due = 60
 
         job_removed = remove_job_if_exists(str(chat_id), context)
         context.job_queue.run_repeating(
@@ -213,8 +241,6 @@ def main():
         settings = json.load(json_file)
 
     token = settings["telegram_token"]
-
-    MACS = settings["MACs"]
 
     SETTINGS = settings
 
