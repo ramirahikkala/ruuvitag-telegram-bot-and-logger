@@ -384,6 +384,18 @@ ptyprocess = {version = "*", markers = "platform_system == \"Linux\""}
 reactivex = "*"
 
 [[package]]
+name = "schedule"
+version = "1.1.0"
+description = "Job scheduling for humans."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "schedule-1.1.0-py2.py3-none-any.whl", hash = "sha256:617adce8b4bf38c360b781297d59918fbebfb2878f1671d189f4f4af5d0567a4"},
+    {file = "schedule-1.1.0.tar.gz", hash = "sha256:e6ca13585e62c810e13a08682e0a6a8ad245372e376ba2b8679294f377dfc8e4"},
+]
+
+[[package]]
 name = "setuptools"
 version = "67.0.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
@@ -483,4 +495,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "073dbbad00c9f9786cee981c3c32bf508d6957359790d308e9e42cda31391926"
+content-hash = "7a917b07fe9455e19eff846b8be0232de8119c31dbf1d76679b8ab24e9a023b4"

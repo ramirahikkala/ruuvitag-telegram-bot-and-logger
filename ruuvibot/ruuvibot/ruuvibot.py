@@ -1,6 +1,12 @@
 from cgitb import text
 import logging
-import re
+import schedule
+import datetime
+import time
+import threading
+import datetime
+from zoneinfo import ZoneInfo
+import asyncio
 
 from pexpect import TIMEOUT
 from telegram import Update
@@ -34,20 +40,26 @@ def get_ruuvi_data():
     # get_data_for_sensors will look data for the duration of timeout_in_sec
 
     ruuvi_tags = {}
-
+    logging.info("Getting data for sensors")
     for ruuvi in SETTINGS["ruuvitags"]:
         ruuvi_tags[ruuvi["MAC"]] = ruuvi
 
+    logging.info("Getting data for sensors " + str(ruuvi_tags))
+
     ruuvi_data = RuuviTagSensor.get_data_for_sensors([m for m in ruuvi_tags], TIMEOUT)
+
+    logging.info("Got data for sensors " + str(ruuvi_data))
 
     # Append the name of the sensor to the data
     for ruuvi_data_point in ruuvi_data:
-        ruuvi_data_point["name"] = ruuvi_tags[ruuvi_data_point]["name"]
+        logging.info("Apending name for " + ruuvi_data_point)
+        ruuvi_data[ruuvi_data_point]["name"] = ruuvi_tags[ruuvi_data_point]["name"]
+        ruuvi_data[ruuvi_data_point]["temperature_calibrated"] = "{:.2f}".format(
+            ruuvi_data[ruuvi_data_point]["temperature"]
+            + ruuvi_tags[ruuvi_data_point]["temperatureOffset"]
+        )
 
-    # Compensate temperature offset
-    for ruuvi_data_point in ruuvi_data:
-        ruuvi_data_point["temperature_calibrated"] = ruuvi_data_point["temperature"] + ruuvi_tags[ruuvi_data_point["mac"]]["temperatureOffset"]
-
+    logging.info("Writing data to database")
     # Store in sqlite
     conn = sqlite3.connect("dbdata/temperature.sqlite")
     c = conn.cursor()
@@ -55,10 +67,11 @@ def get_ruuvi_data():
     c.execute(
         "CREATE TABLE IF NOT EXISTS ruuvi (datetime text, name text, temperature real, temperature_calibrated real, humidity real, pressure real)"
     )
-    for ruuvi_data_point in ruuvi_data:
+    for ruuvi_data_point in ruuvi_data.values():
         c.execute(
-            "INSERT INTO ruuvi VALUES (datetime('now'), ?, ?, ?, ?, ?)",
+            "INSERT INTO ruuvi VALUES (?, ?, ?, ?, ?, ?)",
             (
+                datetime.datetime.now(ZoneInfo("Europe/Helsinki")).strftime("%Y-%m-%dT%H:%M:%S %Z"),
                 ruuvi_data_point["name"],
                 ruuvi_data_point["temperature"],
                 ruuvi_data_point["temperature_calibrated"],
@@ -69,6 +82,7 @@ def get_ruuvi_data():
         conn.commit()
     conn.close()
 
+    logging.info("Returning data")
     return ruuvi_data
 
 
@@ -102,7 +116,14 @@ async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = to_json(datas)
 
     except Exception as e:
-        text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
+        import traceback
+
+        text = (
+            "Ei saatu dataa. Exception: "
+            + str(e)
+            + " "
+            + str(type(e) + ", " + str(traceback.format_exc()))
+        )
         logging.error(e)
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
@@ -110,18 +131,27 @@ async def full(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def temperature(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    try:
-        datas = get_ruuvi_data()
+    # Get the data from sqlite database for all sensors in settings
+    conn = sqlite3.connect("dbdata/temperature.sqlite")
+    c = conn.cursor()
 
-        # Get only temperature from data
-        for mac in datas:
-            datas[mac] = datas[mac]["temperature"]
+    text = ""
 
-        text = to_json(datas)
+    for ruuvi in SETTINGS["ruuvitags"]:
+        c.execute(
+            "SELECT * FROM ruuvi where name = ? ORDER BY datetime DESC LIMIT 1",
+            (ruuvi["name"],),
+        )
+        data = c.fetchone()
+        # Calculate the time since the last update
+        time_since_update = datetime.datetime.now() - datetime.datetime.strptime(
+            data[0], "%Y-%m-%dT%H:%M:%S %Z"
+        )
 
-    except Exception as e:
-        text = "Ei saatu dataa. Exception: " + str(e) + " " + str(type(e))
-        logging.error(e)
+        if time_since_update > datetime.timedelta(minutes=15):
+            text += f"{data[1]}: {data[3]} °C  ({int(time_since_update / datetime.timedelta(minutes=1)) } minuuttia sitten) \n"
+        else:
+            text += f"{data[1]}: {data[3]} °C \n"
 
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
@@ -232,7 +262,6 @@ async def unset(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 def main():
-    global MACS
     global SETTINGS
     global ACTIVE_ALARMS
 
@@ -256,8 +285,18 @@ def main():
     application.add_handler(CommandHandler("set", set_timer))
     application.add_handler(CommandHandler("unset", unset))
 
-    application.run_polling()
+    # Update ruuvi data every 5 minutes
+    schedule.every(5).minutes.do(get_ruuvi_data)
 
+    def run_schedule():
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+
+    schedule_thread = threading.Thread(target=run_schedule, daemon=True, name="schedule_thread")
+    schedule_thread.start()
+
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
